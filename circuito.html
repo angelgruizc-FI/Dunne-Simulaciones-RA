@@ -4520,7 +4520,7 @@ addEventListener("resize",resize);resize();
 
 /* ---------- WebXR (Meta Quest): AR con passthrough o VR ---------- */
 var xrOn=false,xrSession=null,xrMode=null,xrNeedPlace=false,xrFrameN=0,xrHoverRec=null,xrHoverTxt="";
-var PW=0.9,PH=0.756,PCW=1024,PCH=860;
+var PW=0.9,PH=0.835,PCW=1024,PCH=950;
 var panelCv=document.createElement("canvas");panelCv.width=PCW;panelCv.height=PCH;
 var pctx=panelCv.getContext("2d"),ptex=new THREE.CanvasTexture(panelCv);
 if("colorSpace" in ptex)ptex.colorSpace=THREE.SRGBColorSpace;
@@ -4532,7 +4532,7 @@ var XB=[
  {id:"prev",x:666,y:572,w:150,h:76,label:"◀"},{id:"next",x:834,y:572,w:150,h:76,label:"▶"},
  {id:"trm",x:40,y:664,w:220,h:76,label:"Opaco −"},{id:"trp",x:278,y:664,w:220,h:76,label:"Opaco +"},
  {id:"place",x:516,y:664,w:250,h:76,label:"Recolocar"},{id:"exit",x:784,y:664,w:200,h:76,label:"Salir"},
- {id:"rot",x:40,y:756,w:300,h:76,label:"Girar: no"},{id:"rotl",x:356,y:756,w:200,h:76,label:"◀ 45°"},{id:"rotr",x:572,y:756,w:200,h:76,label:"45° ▶"},{id:"flip",x:788,y:756,w:196,h:76,label:"Voltear"}
+ {id:"rot",x:40,y:756,w:300,h:76,label:"Girar: no"},{id:"rotl",x:356,y:756,w:200,h:76,label:"◀ 45°"},{id:"rotr",x:572,y:756,w:200,h:76,label:"45° ▶"},{id:"flip",x:788,y:756,w:196,h:76,label:"Voltear"},{id:"lock",x:40,y:848,w:944,h:76,label:"Fijar posición"}
 ];
 var xrRay=new THREE.Raycaster(),xrTmp=new THREE.Matrix4(),xrHot=null,xrSig="",xrLastDraw=0;
 function xrRoundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
@@ -4564,20 +4564,20 @@ function xrDraw(force){
   XB.forEach(function(b){
     var label=b.id==="play"?T.play:b.label,hot=(xrHot===b.id),pri=(b.id==="play");
     xrRoundRect(c,b.x,b.y,b.w,b.h,38);
-    c.fillStyle=pri?(hot?"#ffa04d":"#ff8419"):(hot?"rgba(255,132,25,0.25)":"rgba(255,255,255,0.07)");c.fill();
+    c.fillStyle=pri?(hot?"#ffa04d":"#ff8419"):(b.id==="lock"&&xrLocked?(hot?"rgba(255,132,25,0.65)":"rgba(255,132,25,0.5)"):(hot?"rgba(255,132,25,0.25)":"rgba(255,255,255,0.07)"));c.fill();
     c.lineWidth=3;c.strokeStyle=hot||pri?"#ff8419":"rgba(255,255,255,0.22)";c.stroke();
     c.fillStyle=pri?"#1a0f00":"#e8ecf4";c.font=(pri?"bold ":"")+"28px "+MONO;c.textAlign="center";c.fillText(String(label).toUpperCase(),b.x+b.w/2,b.y+b.h/2+10);c.textAlign="left";
   });
   ptex.needsUpdate=true;
 }
-var xrRotAuto=false,xrRotPend=0,xrRotT=0,xrRotQ=null,xrRotAx=null,xrRotAy=null;
+var xrLocked=false;var xrRotAuto=false,xrRotPend=0,xrRotT=0,xrRotQ=null,xrRotAx=null,xrRotAy=null;
 function xrRotLabels(){for(var k=0;k<XB.length;k++)if(XB[k].id==="rot")XB[k].label="Girar: "+(xrRotAuto?"sí":"no");xrSig="";}
 function xrRotReset(){xrRotAuto=false;xrRotPend=0;xrRotT=0;xrRotLabels();}
 function xrRotPress(id){
   if(id==="rot"){xrRotAuto=!xrRotAuto;xrRotLabels();return true;}
-  if(id==="rotl"){xrRotPend-=Math.PI/4;return true;}
-  if(id==="rotr"){xrRotPend+=Math.PI/4;return true;}
-  if(id==="flip"){xrRotPend+=Math.PI;return true;}
+  if(id==="rotl"){if(xrLocked)return true;xrRotPend-=Math.PI/4;return true;}
+  if(id==="rotr"){if(xrLocked)return true;xrRotPend+=Math.PI/4;return true;}
+  if(id==="flip"){if(xrLocked)return true;xrRotPend+=Math.PI;return true;}
   return false;
 }
 function xrRotTurn(P,axis,ang){
@@ -4591,7 +4591,7 @@ function xrRotTick(P){
   if(!dt||xrHold("brain").length)return;
   var V=P.position.constructor;if(!xrRotAy)xrRotAy=new V(0,1,0);
   var ax=0,ay=0;
-  for(var i=0;i<2;i++){
+  for(var i=0;i<2&&!xrLocked;i++){
     var s=ctrls[i].userData.src,g=s&&s.gamepad;if(!g||!g.axes)continue;
     var n=g.axes.length,x=n>=4?g.axes[2]:g.axes[0],y=n>=4?g.axes[3]:g.axes[1];
     if(Math.abs(x)+Math.abs(y)>Math.abs(ax)+Math.abs(ay)){ax=x;ay=y;}
@@ -4600,11 +4600,11 @@ function xrRotTick(P){
   if(Math.abs(ax)>=Math.abs(ay)){if(Math.abs(ax)>0.2)yaw=(ax-(ax>0?0.2:-0.2))/0.8*1.6;}
   else if(Math.abs(ay)>0.5)tilt=(ay-(ay>0?0.5:-0.5))/0.5*1.2;
   if(xrRotAuto)yaw+=0.5;
-  var step=0;if(xrRotPend){step=(xrRotPend>0?1:-1)*Math.min(Math.abs(xrRotPend),3.5*dt);xrRotPend-=step;}
+  if(xrLocked)xrRotPend=0;var step=0;if(xrRotPend){step=(xrRotPend>0?1:-1)*Math.min(Math.abs(xrRotPend),3.5*dt);xrRotPend-=step;}
   xrRotTurn(P,xrRotAy,yaw*dt+step);
   if(tilt){if(!xrRotAx)xrRotAx=new V(1,0,0);xrRotAx.set(1,0,0).applyQuaternion(panel.quaternion);xrRotTurn(P,xrRotAx,tilt*dt);}
 }
-function xrPress(id){if(xrRotPress(id))return;
+function xrPress(id){if(id==="lock"){xrLocked=!xrLocked;for(var k=0;k<XB.length;k++)if(XB[k].id==="lock")XB[k].label=xrLocked?"Fijado · toca para soltar":"Fijar posición";if(xrLocked)xrClearGrabs();xrSig="";return;}if(xrLocked&&id==="place")return;if(xrRotPress(id))return;
   var d=function(i){var e=document.getElementById(i);if(e)e.click();};
   if(id==="play"||id==="restart"||id==="prev"||id==="next")d(id);
   else if(id==="trm"||id==="trp"){var t=document.getElementById("tr");if(t){var st=0.1*(id==="trp"?1:-1);t.value=Math.min(+t.max,Math.max(+t.min,(+t.value)+st));t.dispatchEvent(new Event("input"));}}
@@ -4641,7 +4641,7 @@ function xrRebase(t){
    El objeto agarrado se mueve y gira junto con la mano y conserva el ángulo en que se suelta.
    Con las dos manos sobre el mismo objeto se cambia su tamaño. */
 function xrGrabStart(c){
-  if(!xrOn)return;var i=ctrls.indexOf(c);if(i<0||xrG[i])return;
+  if(!xrOn||xrLocked)return;var i=ctrls.indexOf(c);if(i<0||xrG[i])return;
   var t=(c.userData.pHit&&panel.visible)?"panel":"brain";
   if(t==="brain"){}
   xrG[i]={t:t,off:null};xrRebase(t);xrSync();
@@ -4723,7 +4723,7 @@ function xrStart(session){
   Promise.resolve(renderer.xr.setSession(session)).then(function(){
     if(xrBtn)xrBtn.style.visibility="hidden";
   });
-  session.addEventListener("end",function(){xrRotReset();
+  session.addEventListener("end",function(){xrRotReset();xrLocked=false;for(var k=0;k<XB.length;k++)if(XB[k].id==="lock")XB[k].label="Fijar posición";
     xrOn=false;xrSession=null;xrClearGrabs();panel.visible=false;panel.scale.setScalar(1);
     pivot.position.set(0,0,0);pivot.rotation.set(0,0,0);pivot.scale.setScalar(1);pivot.quaternion.identity();
     controls.enabled=true;ctrls.forEach(function(c){c.visible=false;});
