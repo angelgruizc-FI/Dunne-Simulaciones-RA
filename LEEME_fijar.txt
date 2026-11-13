@@ -1,0 +1,13 @@
+BOTÓN "FIJAR" PARA EL MODO RA (repositorio Dunne-Simulaciones-RA)
+
+Archivos a subir (reemplazan a los actuales): circuito.html, escucha.html, divergente.html, modos.html, humor.html, flow.html
+
+Qué cambia: el panel dentro de las gafas tiene una fila nueva abajo con el botón "Fijar posición".
+  Al pulsarlo ("Fijado · toca para soltar") quedan bloqueados:
+    - agarrar y mover el cerebro o el panel con el botón lateral (grip),
+    - girar con el joystick, los botones ◀ 45° / 45° ▶ y Voltear,
+    - Recolocar.
+  Sigue funcionando: iniciar, pausa, fases, opacidad, sonido, el giro automático ("Girar") y Salir.
+  Al volver a pulsar el botón se suelta. Al salir de RA se desbloquea solo.
+
+Uso con un niño: que se ponga las gafas -> Recolocar -> acomodar a su gusto -> Fijar posición.
